@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메모장</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg:#fdfcf8;
+    --bg-paper:#fdfcf8;
+    --bg-secondary:#efe8d8;
+    --ink:#1a1830;
+    --ink-soft:#5b5678;
+    --ink-faint:#8b86a3;
+    --line:#1a1830;
+    --line-soft:#1a1830;
+    --font: 'Inter', sans-serif;
+    color-scheme: light;
+  }
+
+  html.dark{
+    --bg:#0c0b1a;
+    --bg-paper:#17162f;
+    --bg-secondary:#252348;
+    --ink:#faf6ec;
+    --ink-soft:#c7c2e2;
+    --ink-faint:#8d88ae;
+    --line:#faf6ec;
+    --line-soft:#faf6ec;
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--ink);
+    font-family: var(--font);
+    transition:background .4s ease, color .4s ease;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  .app{
+    position:relative;
+    z-index:1;
+    max-width:1180px;
+    margin:0 auto;
+    padding:22px 22px 60px;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:22px;
+    flex-shrink:0;
+  }
+
+  header h1{
+    font-family: var(--font);
+    font-weight:800;
+    font-size:22px;
+    margin:0;
+    letter-spacing:.5px;
+  }
+
+  .header-actions{ display:flex; align-items:center; gap:10px; }
+
+  .icon-btn{
+    width:42px; height:42px;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    background:var(--bg-paper);
+    color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:transform .15s ease, background .2s ease, border-color .2s ease;
+  }
+  .icon-btn:active{ transform:translateY(0) scale(.94); }
+  .icon-btn svg{ width:19px; height:19px; }
+
+  .new-page-btn{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 18px 10px 14px;
+    border-radius:999px;
+    border:1.5px solid var(--ink);
+    background:var(--ink);
+    color:var(--bg);
+    font-family: var(--font);
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    transition:transform .15s ease, opacity .2s ease;
+  }
+  .new-page-btn:active{ transform:translateY(0) scale(.96); }
+  .new-page-btn svg{ width:16px; height:16px; }
+
+  /* ---------- layout ---------- */
+  .layout{
+    display:flex;
+    gap:20px;
+    flex:1;
+    min-height:0;
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width:230px;
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-height:0;
+  }
+
+  .sidebar-label{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    padding:0 4px 2px;
+    flex-shrink:0;
+  }
+
+  #tabList{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    padding:2px 2px 4px;
+    margin:0 -2px;
+  }
+
+  /* ---------- journal switcher ---------- */
+  .journal-switcher{ position:relative; flex-shrink:0; }
+
+  .journal-btn{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:11px 12px;
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    background:var(--bg-paper);
+    color:var(--ink);
+    font-family: var(--font);
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .journal-btn .jname{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .journal-btn svg{ width:14px; height:14px; flex-shrink:0; transition:transform .15s ease; color:var(--ink-faint); }
+  .journal-btn.open svg{ transform:rotate(180deg); }
+
+  .journal-dropdown{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0; right:0;
+    background:var(--bg-paper);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:6px;
+    z-index:20;
+    display:none;
+    max-height:260px;
+    overflow-y:auto;
+  }
+  .journal-dropdown.open{ display:block; }
+
+  .journal-row{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 8px;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  .journal-row.active{ background:var(--bg-secondary); }
+  .journal-row .name{
+    flex:1; min-width:0; font-size:13.5px; font-weight:600;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .journal-row .name-input{
+    flex:1; min-width:0; font:inherit; font-size:13.5px; font-weight:600;
+    border:none; border-bottom:1.5px solid var(--line);
+    background:transparent; color:var(--ink); outline:none;
+  }
+  .journal-row .jdel{
+    flex-shrink:0; width:22px; height:22px; border-radius:50%;
+    border:none; background:transparent; color:var(--ink-faint);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; opacity:.7; gap:4px; padding:0;
+    font-family: var(--font); font-size:11.5px; font-weight:700; white-space:nowrap;
+    touch-action:manipulation;
+    transition:opacity .15s ease, background .15s ease, color .15s ease, width .15s ease, padding .15s ease, border-radius .15s ease;
+  }
+  .journal-row .jdel.confirm{
+    width:auto; padding:0 10px; border-radius:12px;
+    background:var(--ink); color:var(--bg); opacity:1;
+  }
+  .journal-row .jdel svg{ width:12px; height:12px; flex-shrink:0; }
+
+  .journal-add{
+    display:flex; gap:6px;
+    margin-top:4px; padding-top:8px;
+    border-top:1.5px solid var(--line-soft);
+  }
+  .journal-add input{
+    flex:1; min-width:0;
+    padding:8px 9px;
+    border-radius:8px;
+    border:1.5px solid var(--line);
+    background:var(--bg);
+    color:var(--ink);
+    font:inherit; font-size:13px;
+    outline:none;
+  }
+  .journal-add button{
+    flex-shrink:0; width:34px;
+    border-radius:8px; border:none;
+    background:var(--ink); color:var(--bg);
+    font-weight:800; font-size:16px;
+    cursor:pointer;
+  }
+
+  /* ---------- page tabs ---------- */
+  .page-tab{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 12px 12px 14px;
+    border-radius:14px;
+    background:var(--bg-paper);
+    border:1.5px solid var(--line-soft);
+    cursor:pointer;
+    transition: border-color .2s ease, background .15s ease;
+    overflow:hidden;
+  }
+  .page-tab .meta{ min-width:0; flex:1; }
+  .page-tab .title{
+    font-family: var(--font);
+    font-size:14.5px;
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .page-tab .title-input-inline{
+    font-family: var(--font);
+    font-size:14.5px;
+    font-weight:700;
+    width:100%;
+    border:none;
+    border-bottom:1.5px solid var(--line);
+    background:transparent;
+    color:var(--ink);
+    outline:none;
+    padding:0;
+    margin:0;
+  }
+  .page-tab .snippet{
+    font-size:11px;
+    color:var(--ink-faint);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    margin-top:1px;
+  }
+  .page-tab .del{
+    flex-shrink:0;
+    width:30px; height:30px;
+    border-radius:50%;
+    border:none;
+    background:transparent;
+    color:var(--ink-faint);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    opacity:.75;
+    gap:5px;
+    padding:0;
+    font-family: var(--font);
+    font-size:12.5px;
+    font-weight:700;
+    white-space:nowrap;
+    touch-action:manipulation;
+    transition:opacity .15s ease, background .15s ease, color .15s ease, transform .1s ease, width .15s ease, padding .15s ease, border-radius .15s ease;
+  }
+  .page-tab .del:active{ transform:scale(.9); }
+  .page-tab .del svg{ width:14px; height:14px; flex-shrink:0; }
+  .page-tab .del.confirm{
+    width:auto;
+    padding:0 12px;
+    border-radius:14px;
+    background:var(--ink);
+    color:var(--bg);
+    opacity:1;
+  }
+
+  /* ---------- notebook page ---------- */
+  .notebook{
+    flex:1;
+    min-width:0;
+    min-height:0;
+    background:var(--bg-paper);
+    border-radius:22px;
+    border:1.5px solid var(--line);
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:14px 30px 10px 30px;
+    border-bottom:1px solid var(--line-soft);
+    flex-wrap:wrap;
+    position:relative;
+  }
+
+  .tool-btn{
+    width:34px; height:34px;
+    border-radius:9px;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease, color .15s ease;
+    font-family: var(--font);
+  }
+  .tool-btn.active{ background:var(--ink); color:var(--bg); }
+  .tool-btn svg{ width:16px; height:16px; }
+  .tool-divider{ width:1px; height:20px; background:var(--line); margin:0 6px; }
+
+  .page-header{
+    padding:18px 30px 14px 30px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .title-input{
+    font-family: var(--font);
+    font-size:23px;
+    font-weight:700;
+    border:none;
+    outline:none;
+    background:transparent;
+    color:var(--ink);
+    width:100%;
+    padding:0;
+    margin:0;
+    display:block;
+  }
+  .title-input::placeholder{ color:var(--ink-faint); }
+
+  .page-date{
+    font-size:11px;
+    color:var(--ink-faint);
+    white-space:nowrap;
+    margin-top:6px;
+    font-weight:600;
+    letter-spacing:.3px;
+  }
+
+  .editor-wrap{
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    position:relative;
+    padding: 6px 30px 20px 30px;
+  }
+
+  .editor{
+    min-height:340px;
+    font-family: var(--font);
+    font-size:16px;
+    line-height:34px;
+    color:var(--ink);
+    outline:none;
+    caret-color: var(--ink);
+  }
+  .editor:empty::before{
+    content: attr(data-placeholder);
+    color:var(--ink-faint);
+    pointer-events:none;
+  }
+  .editor ul{ margin:0; padding-left:22px; }
+  .editor .check-line{
+    display:flex; align-items:flex-start; gap:8px;
+    line-height:34px;
+  }
+  .editor .check-line input{
+    margin-top:12px;
+    accent-color: var(--ink);
+    width:16px; height:16px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .editor .check-line span{ flex:1; outline:none; }
+  .editor .check-line.done span{ opacity:.5; text-decoration:line-through; }
+
+  .editor .page-link{
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  .link-tool-wrap{ position:relative; }
+
+  @keyframes toolShake{
+    10%,90%{ transform:translateX(-1px); }
+    20%,80%{ transform:translateX(2px); }
+    30%,50%,70%{ transform:translateX(-3px); }
+    40%,60%{ transform:translateX(3px); }
+  }
+  .tool-btn.shake{ animation:toolShake .4s ease; }
+
+  .link-popover{
+    position:absolute;
+    top:calc(100% + 8px);
+    left:0;
+    width:230px;
+    max-height:260px;
+    overflow-y:auto;
+    background:var(--bg-paper);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:8px;
+    z-index:30;
+    display:none;
+  }
+  .link-popover.open{ display:block; }
+  .link-popover-title{
+    font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+    color:var(--ink-faint); padding:2px 6px 6px;
+  }
+  .link-popover-item{
+    padding:8px 8px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13.5px; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .link-popover-empty{ padding:8px; font-size:12.5px; color:var(--ink-faint); }
+
+  /* mobile */
+  @media (max-width:780px){
+    .layout{ flex-direction:column; }
+    .sidebar{
+      width:100%;
+      max-height:34vh;
+    }
+    .page-tab{ min-width:0; }
+  }
+
+  ::selection{ background:var(--ink); color:var(--bg); }
+
+  .save-toast{
+    position:fixed;
+    bottom:16px;
+    right:16px;
+    font-family: var(--font);
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--ink-faint);
+    background:var(--bg-paper);
+    border:1.5px solid var(--line);
+    padding:6px 13px;
+    border-radius:999px;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity .25s ease, transform .25s ease;
+    pointer-events:none;
+    z-index:50;
+  }
+  .save-toast.show{ opacity:1; transform:translateY(0); }
+
+  /* hover effects only for devices with real pointers — on touch, relying on :hover
+     can eat the first tap (used to simulate hover) so a button needs two taps to
+     actually click. Scoping hover like this keeps touch taps working on the first try. */
+  @media (hover:hover) and (pointer:fine){
+    .icon-btn:hover{ transform:translateY(-2px); }
+    .new-page-btn:hover{ transform:translateY(-2px); }
+    .journal-row:hover{ background:var(--bg-secondary); }
+    .journal-row .jdel:hover{ background:var(--ink); color:var(--bg); opacity:1; }
+    .page-tab:hover{ border-color:var(--line); }
+    .page-tab .del:hover{ background:var(--ink); color:var(--bg); }
+    .tool-btn:hover{ background:var(--bg-secondary); color:var(--ink); }
+    .link-popover-item:hover{ background:var(--bg-secondary); }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <h1>메모장 🌈</h1>
+    <div class="header-actions">
+      <button class="new-page-btn" id="newPageBtn" title="Create new page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        new page
+      </button>
+      <button class="icon-btn" id="themeToggle" title="Toggle dark / light mode"></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="journal-switcher" id="journalSwitcher">
+        <button class="journal-btn" id="journalBtn">
+          <span class="jname" id="journalName">Notebook 1</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="journal-dropdown" id="journalDropdown">
+          <div id="journalList"></div>
+          <div class="journal-add">
+            <input type="text" id="newJournalInput" placeholder="new journal name" maxlength="40">
+            <button id="addJournalBtn" title="Add journal">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-label">your pages</div>
+      <div id="tabList"></div>
+    </aside>
+
+    <main class="notebook" id="notebook">
+      <div class="toolbar">
+        <button class="tool-btn" data-cmd="bold" title="Bold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h7a3.5 3.5 0 010 7H6zM6 11h8a3.5 3.5 0 010 7H6z"/></svg>
+        </button>
+        <button class="tool-btn" data-cmd="italic" title="Italic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M11 4h6M5 20h6M14 4L8 20"/></svg>
+        </button>
+        <button class="tool-btn" data-cmd="underline" title="Underline">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 4v7a6 6 0 0012 0V4M4 20h16"/></svg>
+        </button>
+        <div class="tool-divider"></div>
+        <button class="tool-btn" data-cmd="list" title="Bulleted list">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="5" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="5" cy="18" r="1.4" fill="currentColor" stroke="none"/><path d="M10 6h10M10 12h10M10 18h10"/></svg>
+        </button>
+        <button class="tool-btn" data-cmd="check" title="Checklist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/><path d="M5 7l1.3 1.3L9 5.5"/><path d="M14 6h6M14 12h6M14 18h6"/><rect x="4" y="14" width="6" height="6" rx="1.5"/></svg>
+        </button>
+        <div class="tool-divider"></div>
+        <div class="link-tool-wrap" id="linkToolWrap">
+          <button class="tool-btn" data-cmd="link" id="linkBtn" title="Select text, then click here to link it to another page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15L15 9"/><path d="M10 6l1-1a4 4 0 015.7 5.7l-1.4 1.4"/><path d="M14 18l-1 1a4 4 0 01-5.7-5.7l1.4-1.4"/></svg>
+          </button>
+          <div class="link-popover" id="linkPopover">
+            <div class="link-popover-title" id="linkPopoverTitle">link to page</div>
+            <div id="linkPopoverList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <input type="text" class="title-input" id="titleInput" placeholder="untitled page" maxlength="60">
+        <div class="page-date" id="pageDate"></div>
+      </div>
+
+      <div class="editor-wrap">
+        <div class="editor" id="editor" contenteditable="true" data-placeholder="write something"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="save-toast" id="saveToast">saved</div>
+
+<script>
+(function(){
+
+  let journals = [];        // [{id,name,createdAt}]
+  let currentJournalId = null;
+  let pages = [];            // pages belonging to the current journal
+  let currentId = null;      // current open page id
+  let saveTimer = null;
+  let titleSaveTimer = null;
+  let contentCache = {};     // page id -> html string (loaded lazily, global across journals)
+
+  const el = (id) => document.getElementById(id);
+  const editor = el('editor');
+  const titleInput = el('titleInput');
+  const tabList = el('tabList');
+  const journalBtn = el('journalBtn');
+  const journalDropdown = el('journalDropdown');
+  const journalList = el('journalList');
+  const journalName = el('journalName');
+
+  function uid(prefix){ return (prefix||'p_') + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function formatDate(ts){
+    try{
+      return new Date(ts).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+    }catch(e){ return ''; }
+  }
+
+  // ---------------- storage ----------------
+  // Prefer Claude.ai's built-in persistent storage when this is running inside an
+  // artifact — it survives closing the tab and is tied to your account. If that API
+  // isn't present (e.g. this file is opened directly, or hosted somewhere like GitHub
+  // Pages), fall back to the browser's own localStorage so it still saves permanently
+  // on this device/browser.
+  const hasPlatformStorage = typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+  const LOCAL_PREFIX = 'orbit-notepad:';
+
+  async function safeGet(key){
+    try{
+      if (hasPlatformStorage){
+        const r = await window.storage.get(key, false);
+        return r ? r.value : null;
+      }
+      return localStorage.getItem(LOCAL_PREFIX + key);
+    }catch(e){ return null; }
+  }
+  async function safeSet(key, value){
+    try{
+      if (hasPlatformStorage) await window.storage.set(key, value, false);
+      else localStorage.setItem(LOCAL_PREFIX + key, value);
+    }catch(e){ console.error('save failed', e); }
+  }
+  async function safeDelete(key){
+    try{
+      if (hasPlatformStorage) await window.storage.delete(key, false);
+      else localStorage.removeItem(LOCAL_PREFIX + key);
+    }catch(e){ /* ignore */ }
+  }
+
+  async function loadJournalsMeta(){
+    const raw = await safeGet('notepad-journals');
+    if (raw){ try{ return JSON.parse(raw); }catch(e){ /* fallthrough */ } }
+    return null;
+  }
+  async function saveJournalsMeta(){
+    await safeSet('notepad-journals', JSON.stringify({ journals, currentJournalId }));
+  }
+
+  async function loadJournalData(journalId){
+    const raw = await safeGet('notepad-journal-data:' + journalId);
+    if (raw){ try{ return JSON.parse(raw); }catch(e){ /* fallthrough */ } }
+    return null;
+  }
+  async function saveJournalData(){
+    if (!currentJournalId) return;
+    await safeSet('notepad-journal-data:' + currentJournalId, JSON.stringify({ pages, currentPageId: currentId }));
+  }
+
+  async function loadPageContent(id){
+    if (contentCache[id] !== undefined) return contentCache[id];
+    const raw = await safeGet('notepad-content:' + id);
+    let html = '';
+    if (raw){ try{ html = JSON.parse(raw).html || ''; }catch(e){ html = ''; } }
+    contentCache[id] = html;
+    return html;
+  }
+  async function savePageContent(id, html){
+    contentCache[id] = html;
+    await safeSet('notepad-content:' + id, JSON.stringify({ html }));
+  }
+
+  // ---------------- theme ----------------
+  function moonIcon(dark){
+    return dark
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0110.5 5a7 7 0 108.9 9.5z"/></svg>';
+  }
+  async function setTheme(dark, persist){
+    document.documentElement.classList.toggle('dark', dark);
+    el('themeToggle').innerHTML = moonIcon(dark);
+    if (persist) await safeSet('notepad-theme', dark ? 'dark' : 'light');
+  }
+  el('themeToggle').addEventListener('click', () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setTheme(!isDark, true);
+  });
+
+  // ---------------- pending-edit flush ----------------
+  async function flushCurrentPage(){
+    clearTimeout(saveTimer);
+    clearTimeout(titleSaveTimer);
+    if (!currentId) return;
+    const outgoing = pages.find(p => p.id === currentId);
+    const liveHtml = editor.innerHTML;
+    if (outgoing && liveHtml !== contentCache[currentId]){
+      outgoing.updatedAt = Date.now();
+      await savePageContent(currentId, liveHtml);
+    }
+  }
+
+  let pendingPageDeleteId = null;
+  let pendingPageDeleteTimer = null;
+
+  // ---------------- page rendering ----------------
+  function renderTabs(){
+    tabList.innerHTML = '';
+    pages.forEach(page => {
+      const tab = document.createElement('div');
+      tab.className = 'page-tab';
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = page.title && page.title.trim() ? page.title : 'untitled page';
+      title.title = 'Double-click to rename';
+      title.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.className = 'title-input-inline';
+        input.value = page.title || '';
+        input.maxLength = 60;
+        input.placeholder = 'untitled page';
+        meta.replaceChild(input, title);
+        input.focus();
+        input.select();
+        const commit = async () => {
+          page.title = input.value;
+          page.updatedAt = Date.now();
+          if (page.id === currentId) titleInput.value = page.title;
+          renderTabs();
+          await saveJournalData();
+        };
+        input.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+          if (ev.key === 'Escape'){ ev.preventDefault(); renderTabs(); }
+        });
+        input.addEventListener('blur', commit, { once:true });
+      });
+      const snippet = document.createElement('div');
+      snippet.className = 'snippet';
+      snippet.textContent = formatDate(page.updatedAt || page.createdAt);
+      meta.appendChild(title);
+      meta.appendChild(snippet);
+      tab.appendChild(meta);
+
+      const del = document.createElement('button');
+      del.className = 'del' + (pendingPageDeleteId === page.id ? ' confirm' : '');
+      del.type = 'button';
+      if (pendingPageDeleteId === page.id){
+        del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Delete?</span>';
+        del.title = 'Tap again to confirm';
+      } else {
+        del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
+        del.title = 'Delete page';
+      }
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (pendingPageDeleteId === page.id){
+          clearTimeout(pendingPageDeleteTimer);
+          pendingPageDeleteId = null;
+          deletePage(page.id);
+        } else {
+          pendingPageDeleteId = page.id;
+          clearTimeout(pendingPageDeleteTimer);
+          pendingPageDeleteTimer = setTimeout(() => { pendingPageDeleteId = null; renderTabs(); }, 4000);
+          renderTabs();
+        }
+      });
+      tab.appendChild(del);
+
+      tab.addEventListener('click', () => selectPage(page.id));
+      tabList.appendChild(tab);
+    });
+  }
+
+  async function selectPage(id){
+    if (id === currentId) return;
+    await flushCurrentPage();
+    if (currentId) await saveJournalData();
+
+    currentId = id;
+    const page = pages.find(p => p.id === id);
+    if (!page) return;
+    titleInput.value = page.title || '';
+    el('pageDate').textContent = formatDate(page.createdAt);
+    renderTabs();
+    const html = await loadPageContent(id);
+    editor.innerHTML = html;
+    normalizeEmptyEditor();
+    await saveJournalData();
+  }
+
+  // collapse a contenteditable that only contains stray <br>/empty <div>s back to
+  // truly empty, so the CSS placeholder (:empty) reliably reappears after clearing text
+  function normalizeEmptyEditor(){
+    const bare = editor.innerHTML
+      .replace(/<br\s*\/?>/gi, '')
+      .replace(/<div>\s*<\/div>/gi, '')
+      .trim();
+    if (!bare) editor.innerHTML = '';
+  }
+
+  let saveToastTimer = null;
+  function flashSaved(){
+    const toast = el('saveToast');
+    if (!toast) return;
+    toast.classList.add('show');
+    clearTimeout(saveToastTimer);
+    saveToastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
+  }
+
+  function scheduleSave(){
+    const idAtSchedule = currentId;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      if (!idAtSchedule) return;
+      const page = pages.find(p => p.id === idAtSchedule);
+      if (page) page.updatedAt = Date.now();
+      await savePageContent(idAtSchedule, editor.innerHTML);
+      await saveJournalData();
+      renderTabs();
+      flashSaved();
+    }, 500);
+  }
+
+  editor.addEventListener('input', () => {
+    normalizeEmptyEditor();
+    scheduleSave();
+  });
+
+  titleInput.addEventListener('input', () => {
+    const page = pages.find(p => p.id === currentId);
+    if (!page) return;
+    page.title = titleInput.value;
+    page.updatedAt = Date.now();
+    renderTabs();
+    clearTimeout(titleSaveTimer);
+    titleSaveTimer = setTimeout(async () => {
+      await saveJournalData();
+      flashSaved();
+    }, 400);
+  });
+
+  // ---------------- toolbar ----------------
+  function setToolActive(cmd, isActive){
+    const btn = document.querySelector('.tool-btn[data-cmd="' + cmd + '"]');
+    if (btn) btn.classList.toggle('active', !!isActive);
+  }
+  function updateToolbarState(){
+    try{
+      setToolActive('bold', document.queryCommandState('bold'));
+      setToolActive('italic', document.queryCommandState('italic'));
+      setToolActive('underline', document.queryCommandState('underline'));
+    }catch(e){ /* queryCommandState can throw in some browsers if unsupported */ }
+  }
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !sel.anchorNode || !editor.contains(sel.anchorNode)) return;
+    updateToolbarState();
+  });
+
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    // keep the editor's text selection intact when the toolbar button is pressed —
+    // without this, the button steals focus on mousedown and the selection collapses
+    // before the click handler runs, so formatting silently fails to apply.
+    btn.addEventListener('mousedown', (e) => e.preventDefault());
+
+    btn.addEventListener('click', () => {
+      const cmd = btn.dataset.cmd;
+      if (cmd === 'link'){ openLinkPopover(); return; }
+
+      editor.focus();
+      if (cmd === 'bold') document.execCommand('bold');
+      else if (cmd === 'italic') document.execCommand('italic');
+      else if (cmd === 'underline') document.execCommand('underline');
+      else if (cmd === 'list') document.execCommand('insertUnorderedList');
+      else if (cmd === 'check') insertChecklistLine();
+      updateToolbarState();
+      scheduleSave();
+    });
+  });
+
+  // build the checklist row by hand (instead of execCommand insertHTML) and explicitly
+  // place the cursor inside its label span — otherwise the browser drops the cursor on
+  // a separate line below the checkbox, so anything you type never actually attaches to it
+  function insertChecklistLine(){
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !editor.contains(sel.anchorNode)){
+      const end = document.createRange();
+      end.selectNodeContents(editor);
+      end.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(end);
+    }
+    const range = sel.getRangeAt(0);
+
+    const line = document.createElement('div');
+    line.className = 'check-line';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    const label = document.createElement('span');
+    label.innerHTML = '&nbsp;';
+    line.appendChild(checkbox);
+    line.appendChild(label);
+
+    let block = range.startContainer;
+    if (block.nodeType !== 1) block = block.parentElement;
+
+    if (block === editor){
+      // the editor has no line wrapper yet (totally empty) — just drop the row straight in
+      editor.appendChild(line);
+    } else {
+      while (block && block.parentElement !== editor) block = block.parentElement;
+      const isEmptyLine = block && block.textContent.trim() === '' && !block.querySelector('input, .page-link');
+      if (isEmptyLine){
+        // replace the empty line outright instead of inserting the checkbox inside it —
+        // this is what fixes the nested/duplicated markup from repeated checklist clicks
+        editor.insertBefore(line, block);
+        block.remove();
+      } else {
+        range.deleteContents();
+        range.insertNode(line);
+      }
+    }
+
+    // land the cursor inside the label, right after the checkbox, so typing continues there
+    const after = document.createRange();
+    after.selectNodeContents(label);
+    after.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(after);
+  }
+
+  // pressing Enter while inside a checklist line's label exits to a plain new line,
+  // instead of the browser splitting the check-line div itself (which used to duplicate
+  // the checkbox markup and produce nested, broken HTML)
+  editor.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const anchor = sel.anchorNode;
+    const node = anchor && anchor.nodeType === 1 ? anchor : anchor && anchor.parentElement;
+    const checkLine = node ? node.closest('.check-line') : null;
+    if (!checkLine) return;
+    e.preventDefault();
+    const newLine = document.createElement('div');
+    newLine.innerHTML = '<br>';
+    checkLine.parentNode.insertBefore(newLine, checkLine.nextSibling);
+    const r = document.createRange();
+    r.setStart(newLine, 0);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    scheduleSave();
+  });
+
+  // ---------------- link-to-page ----------------
+  let savedLinkRange = null;
+  let savedLinkText = '';
+  const linkPopover = el('linkPopover');
+  const linkPopoverList = el('linkPopoverList');
+  const linkPopoverTitle = el('linkPopoverTitle');
+  const linkBtn = el('linkBtn');
+
+  function openLinkPopover(){
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed || !sel.anchorNode || !editor.contains(sel.anchorNode)){
+      // nothing selected — give visible feedback instead of silently doing nothing
+      linkBtn.classList.remove('shake');
+      void linkBtn.offsetWidth; // restart the animation if it's already mid-shake
+      linkBtn.classList.add('shake');
+      linkBtn.title = 'Select some text first, then click here';
+      setTimeout(() => { linkBtn.title = 'Select text, then click here to link it to another page'; }, 2000);
+      return;
+    }
+    savedLinkRange = sel.getRangeAt(0).cloneRange();
+    savedLinkText = sel.toString();
+    renderLinkPopoverList();
+    linkPopover.classList.add('open');
+  }
+  function closeLinkPopover(){
+    linkPopover.classList.remove('open');
+  }
+  function renderLinkPopoverList(){
+    linkPopoverTitle.textContent = 'link "' + (savedLinkText.length > 24 ? savedLinkText.slice(0, 24) + '…' : savedLinkText) + '" to:';
+    linkPopoverList.innerHTML = '';
+    const others = pages.filter(p => p.id !== currentId);
+    if (!others.length){
+      linkPopoverList.innerHTML = '<div class="link-popover-empty">no other pages yet — create one first</div>';
+      return;
+    }
+    others.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'link-popover-item';
+      item.textContent = p.title && p.title.trim() ? p.title : 'untitled page';
+      item.addEventListener('mousedown', (e) => e.preventDefault()); // keep savedLinkRange valid
+      item.addEventListener('click', () => {
+        insertPageLink(p.id);
+        closeLinkPopover();
+      });
+      linkPopoverList.appendChild(item);
+    });
+  }
+  function insertPageLink(targetId){
+    if (!savedLinkRange) return;
+    editor.focus();
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedLinkRange);
+    const range = sel.getRangeAt(0);
+    const link = document.createElement('span');
+    link.className = 'page-link';
+    link.dataset.pageId = targetId;
+    link.title = 'Click to go to this page';
+    try{
+      range.surroundContents(link);
+    }catch(e){
+      const contents = range.extractContents();
+      link.appendChild(contents);
+      range.insertNode(link);
+    }
+    const after = document.createRange();
+    after.setStartAfter(link);
+    after.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(after);
+    savedLinkRange = null;
+    normalizeEmptyEditor();
+    scheduleSave();
+  }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.link-tool-wrap')) closeLinkPopover();
+  });
+
+  // clicking a page-link jumps straight to that page; clicking a checklist box toggles it done
+  editor.addEventListener('click', (e) => {
+    const linkEl = e.target.closest('.page-link');
+    if (linkEl){
+      e.preventDefault();
+      const pid = linkEl.dataset.pageId;
+      if (pid && pages.find(p => p.id === pid)) selectPage(pid);
+      return;
+    }
+    if (e.target && e.target.type === 'checkbox'){
+      const line = e.target.closest('.check-line');
+      if (line) line.classList.toggle('done', e.target.checked);
+      scheduleSave();
+    }
+  });
+
+  // ---------------- page create / delete ----------------
+  async function createPage(){
+    const page = { id: uid('p_'), title: '', createdAt: Date.now(), updatedAt: Date.now() };
+    pages.push(page);
+    contentCache[page.id] = '';
+    await savePageContent(page.id, '');
+    await selectPage(page.id); // selectPage flushes whatever page you were previously on first
+    titleInput.focus();
+  }
+
+  async function deletePage(id){
+    const idx = pages.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    pages.splice(idx, 1);
+    delete contentCache[id];
+    await safeDelete('notepad-content:' + id);
+
+    if (pages.length === 0){
+      await createPage();
+      return;
+    }
+    if (currentId === id){
+      const next = idx < pages.length ? pages[idx] : pages[pages.length - 1];
+      currentId = null;
+      await selectPage(next.id);
+    } else {
+      renderTabs();
+      await saveJournalData();
+    }
+  }
+
+  el('newPageBtn').addEventListener('click', createPage);
+
+  // ---------------- journals ----------------
+  let pendingJournalDeleteId = null;
+  let pendingJournalDeleteTimer = null;
+
+  function renderJournalSwitcher(){
+    const current = journals.find(j => j.id === currentJournalId);
+    journalName.textContent = current ? current.name : 'Notebook';
+
+    journalList.innerHTML = '';
+    journals.forEach(j => {
+      const row = document.createElement('div');
+      row.className = 'journal-row' + (j.id === currentJournalId ? ' active' : '');
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = j.name;
+      name.title = 'Click to switch · double-click to rename';
+      let nameClickTimer = null;
+      name.addEventListener('click', (e) => {
+        // don't let this bubble to the row's own click handler — we replicate its
+        // switch+close behavior here on a short delay, so a second click landing
+        // within that window (i.e. a double-click) can cancel it and rename instead
+        e.stopPropagation();
+        clearTimeout(nameClickTimer);
+        nameClickTimer = setTimeout(() => {
+          switchJournal(j.id);
+          closeJournalDropdown();
+        }, 260);
+      });
+      name.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        clearTimeout(nameClickTimer);
+        const input = document.createElement('input');
+        input.className = 'name-input';
+        input.value = j.name;
+        input.maxLength = 40;
+        row.replaceChild(input, name);
+        input.focus();
+        input.select();
+        const commit = async () => {
+          const val = input.value.trim();
+          if (val) await renameJournal(j.id, val);
+          else renderJournalSwitcher();
+        };
+        input.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+          if (ev.key === 'Escape'){ ev.preventDefault(); renderJournalSwitcher(); }
+        });
+        input.addEventListener('blur', commit, { once:true });
+      });
+      row.appendChild(name);
+
+      if (journals.length > 1){
+        const del = document.createElement('button');
+        del.className = 'jdel' + (pendingJournalDeleteId === j.id ? ' confirm' : '');
+        del.type = 'button';
+        if (pendingJournalDeleteId === j.id){
+          del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Delete?</span>';
+          del.title = 'Tap again to confirm';
+        } else {
+          del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
+          del.title = 'Delete journal';
+        }
+        del.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (pendingJournalDeleteId === j.id){
+            clearTimeout(pendingJournalDeleteTimer);
+            pendingJournalDeleteId = null;
+            deleteJournal(j.id);
+          } else {
+            pendingJournalDeleteId = j.id;
+            clearTimeout(pendingJournalDeleteTimer);
+            pendingJournalDeleteTimer = setTimeout(() => { pendingJournalDeleteId = null; renderJournalSwitcher(); }, 4000);
+            renderJournalSwitcher();
+          }
+        });
+        row.appendChild(del);
+      }
+
+      row.addEventListener('click', () => {
+        switchJournal(j.id);
+        closeJournalDropdown();
+      });
+      journalList.appendChild(row);
+    });
+  }
+
+  function openJournalDropdown(){
+    journalDropdown.classList.add('open');
+    journalBtn.classList.add('open');
+  }
+  function closeJournalDropdown(){
+    journalDropdown.classList.remove('open');
+    journalBtn.classList.remove('open');
+  }
+  journalBtn.addEventListener('click', () => {
+    if (journalDropdown.classList.contains('open')) closeJournalDropdown();
+    else openJournalDropdown();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#journalSwitcher')) closeJournalDropdown();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape'){ closeJournalDropdown(); closeLinkPopover(); }
+  });
+
+  async function switchJournal(journalId){
+    if (journalId === currentJournalId) return;
+    await flushCurrentPage();
+    await saveJournalData();
+
+    currentJournalId = journalId;
+    await saveJournalsMeta();
+
+    const data = await loadJournalData(journalId);
+    pages = (data && Array.isArray(data.pages)) ? data.pages : [];
+    currentId = null;
+
+    renderJournalSwitcher();
+
+    if (pages.length === 0){
+      await createPage();
+    } else {
+      const startId = (data.currentPageId && pages.find(p => p.id === data.currentPageId)) ? data.currentPageId : pages[pages.length - 1].id;
+      await selectPage(startId);
+    }
+  }
+
+  async function createJournal(name){
+    await flushCurrentPage();
+    await saveJournalData();
+
+    const journal = { id: uid('j_'), name: (name && name.trim()) ? name.trim() : ('Notebook ' + (journals.length + 1)), createdAt: Date.now() };
+    journals.push(journal);
+    currentJournalId = journal.id;
+    await saveJournalsMeta();
+
+    pages = [];
+    currentId = null;
+    renderJournalSwitcher();
+    await createPage();
+  }
+
+  async function renameJournal(journalId, newName){
+    const j = journals.find(x => x.id === journalId);
+    if (!j) return;
+    j.name = newName;
+    await saveJournalsMeta();
+    renderJournalSwitcher();
+  }
+
+  async function deleteJournal(journalId){
+    if (journals.length <= 1) return; // always keep at least one journal
+    const idx = journals.findIndex(j => j.id === journalId);
+    if (idx === -1) return;
+
+    let pagesToDelete;
+    if (journalId === currentJournalId){
+      pagesToDelete = pages;
+    } else {
+      const data = await loadJournalData(journalId);
+      pagesToDelete = (data && data.pages) || [];
+    }
+    for (const p of pagesToDelete){
+      await safeDelete('notepad-content:' + p.id);
+      delete contentCache[p.id];
+    }
+    await safeDelete('notepad-journal-data:' + journalId);
+    journals.splice(idx, 1);
+
+    if (currentJournalId === journalId){
+      const next = journals[0];
+      currentJournalId = next.id;
+      await saveJournalsMeta();
+      const data = await loadJournalData(next.id);
+      pages = (data && data.pages) || [];
+      currentId = null;
+      renderJournalSwitcher();
+      if (pages.length === 0){
+        await createPage();
+      } else {
+        const startId = (data.currentPageId && pages.find(p => p.id === data.currentPageId)) ? data.currentPageId : pages[pages.length - 1].id;
+        await selectPage(startId);
+      }
+    } else {
+      await saveJournalsMeta();
+      renderJournalSwitcher();
+    }
+  }
+
+  el('addJournalBtn').addEventListener('click', () => {
+    const input = el('newJournalInput');
+    const val = input.value;
+    input.value = '';
+    createJournal(val).then(closeJournalDropdown);
+  });
+  el('newJournalInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter'){
+      e.preventDefault();
+      el('addJournalBtn').click();
+    }
+  });
+
+  // ---------------- init ----------------
+  async function init(){
+    document.execCommand('defaultParagraphSeparator', false, 'div');
+
+    const themeRaw = await safeGet('notepad-theme');
+    await setTheme(themeRaw === 'dark', false);
+
+    const journalsMeta = await loadJournalsMeta();
+
+    if (journalsMeta && Array.isArray(journalsMeta.journals) && journalsMeta.journals.length){
+      journals = journalsMeta.journals;
+      currentJournalId = journals.find(j => j.id === journalsMeta.currentJournalId) ? journalsMeta.currentJournalId : journals[0].id;
+
+      const data = await loadJournalData(currentJournalId);
+      pages = (data && Array.isArray(data.pages)) ? data.pages : [];
+      renderJournalSwitcher();
+
+      if (pages.length === 0){
+        await createPage();
+      } else {
+        const startId = (data.currentPageId && pages.find(p => p.id === data.currentPageId)) ? data.currentPageId : pages[pages.length - 1].id;
+        currentId = null;
+        renderTabs();
+        await selectPage(startId);
+      }
+      return;
+    }
+
+    // no journals yet — check for legacy single-notebook data from an earlier version and migrate it
+    const legacyRaw = await safeGet('notepad-meta');
+    let legacyMeta = null;
+    if (legacyRaw){ try{ legacyMeta = JSON.parse(legacyRaw); }catch(e){ /* ignore */ } }
+
+    const journal = { id: uid('j_'), name: 'Notebook 1', createdAt: Date.now() };
+    journals = [journal];
+    currentJournalId = journal.id;
+
+    if (legacyMeta && Array.isArray(legacyMeta.pages) && legacyMeta.pages.length){
+      pages = legacyMeta.pages;
+      currentId = null;
+      await saveJournalsMeta();
+      renderJournalSwitcher();
+      renderTabs();
+      const startId = (legacyMeta.currentId && pages.find(p => p.id === legacyMeta.currentId)) ? legacyMeta.currentId : pages[pages.length - 1].id;
+      await selectPage(startId);
+      await safeDelete('notepad-meta');
+    } else {
+      const page = { id: uid('p_'), title: 'welcome', createdAt: Date.now(), updatedAt: Date.now() };
+      pages = [page];
+      const welcomeHtml = '<div>hi, this is your little notebook</div><div><br></div>' +
+        '<div>— tap <b>new page</b> to start a fresh one</div>' +
+        '<div>— use the panel on the left to switch or add journals</div>' +
+        '<div>— everything saves on its own, just start typing</div>';
+      contentCache[page.id] = welcomeHtml;
+      await savePageContent(page.id, welcomeHtml);
+      currentId = null;
+      await saveJournalsMeta();
+      renderJournalSwitcher();
+      renderTabs();
+      await selectPage(page.id);
+    }
+  }
+
+  init();
+
+})();
+</script>
+</body>
+</html>
